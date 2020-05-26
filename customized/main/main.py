@@ -1,3 +1,4 @@
+import copy
 import math
 
 import numpy as np
@@ -6,6 +7,7 @@ from sklearn.cluster import KMeans
 from sklearn.decomposition import PCA
 from sklearn.metrics.pairwise import pairwise_distances
 
+from common.utils.LogTime import LogTime
 from common.utils.plotter import draw_plot_point_label_set2
 from common.utils.utils import merge_labels_2d
 from customized.main.DatasetManager import DatasetManager
@@ -50,6 +52,27 @@ def predict_ksimilar_user(ratings, ratings_diff, similarity, k=20):
     return pred / np.array([k_mat_1d]).T
 
 
+def predict_ksimilar_user_clust(ratings, ratings_diff, similarity, k=20):
+    user_num, item_num = ratings.shape
+    pred = np.zeros(ratings.shape)
+    k_mat_1d = np.zeros(shape=user_num)
+
+    for user in range(user_num):
+        row = similarity[user]
+        neighbours = sorted(row, key=lambda j: j['sim_factor'], reverse=True)[0:k]
+        for n in neighbours:
+            similar_user, sim_factor = n['user_id'], n['sim_factor']
+            k_mat_1d[user] += abs(sim_factor)
+            for i in range(item_num):
+                if ratings[user][i] > 0:
+                    continue
+
+                if ratings[similar_user][i] > 0:
+                    pred[user][i] += sim_factor * ratings_diff[similar_user][i]
+
+    return pred / np.array([k_mat_1d]).T
+
+
 def predict_ksimilar_items(ratings, ratings_diff, similarity, k=20):
     user_num, item_num = ratings.shape
     pred = np.zeros(ratings.shape)
@@ -72,6 +95,17 @@ def predict_ksimilar_items(ratings, ratings_diff, similarity, k=20):
             k_mat_1d[i] = 1
 
     return pred / k_mat_1d
+
+
+def predict_clust(ratings, similarity, type='user', k_similar=20):
+    pred = None
+    if type == 'user':
+        mean_user_rating = ratings.mean(axis=1).reshape(-1, 1)
+        ratings_diff = (ratings - mean_user_rating)
+
+        pred = mean_user_rating + predict_ksimilar_user_clust(ratings, ratings_diff, similarity, k=k_similar)
+
+    return pred
 
 
 def predict(ratings, similarity, type='user', k_similar=None):
@@ -175,6 +209,10 @@ def jaccard_sim(a, b):
     return common / denominator
 
 
+def transform_recomm(recomm):
+    return [[obj['item_id'] for obj in recomm[i]] for i in range(len(recomm))]
+
+
 def ex1(plot_charts=True, verbose=True):
     """
     Simple CF using item-based and user-based method
@@ -236,9 +274,6 @@ def ex1(plot_charts=True, verbose=True):
     # evaluate
     evaluator = Evaluator(user_item_test)
 
-    def transform_recomm(recomm):
-        return [[obj['item_id'] for obj in recomm[i]] for i in range(len(recomm))]
-
     recomm_usr_mat = transform_recomm(recommendations_usr)
     recomm_itm_mat = transform_recomm(recommendations_itm)
     recomm_usr_itm_mat = transform_recomm(recommendations_usr_item)
@@ -257,6 +292,71 @@ def ex1(plot_charts=True, verbose=True):
     print(eval_user_item)
 
 
+def pairwise_distances_clust(user_item, cluster_data, metric, sort_optim=True):
+    size, _ = user_item.shape
+    sim = np.zeros(shape=(size, size))
+    indexes = None
+    if sort_optim:
+        indexes = dict()
+        for key in cluster_data['groups']:
+            indexes[key] = 0
+
+    def _get_clust(user):
+        return cluster_data['labels'][user]
+
+    def _get_mates(cl_num):
+        return cluster_data['groups'][cl_num]
+
+    def _get_mates_by_usr(user):
+        cl_num = _get_clust(user)
+        return cluster_data['groups'][cl_num]
+
+    if sort_optim:
+        for user in range(size):
+            cl = _get_clust(user)
+            mates = _get_mates(cl)
+            start_idx = indexes[cl]
+            for j in range(start_idx, len(mates)):
+                mate = mates[j]
+                if user == mate:
+                    indexes[cl] = j + 1
+                    continue
+
+                sim[user][mate] = metric(user_item[user], user_item[mate])
+
+    else:
+        for i in range(size):
+            for j in _get_mates_by_usr(i):
+                if i > j or i == j:
+                    continue
+
+                sim[i][j] = metric(user_item[i], user_item[j])
+
+    return sim + sim.T
+
+
+def group_users(cluster_labels, sort=True):
+    groups = dict()
+
+    for usr_idx, clust_num in enumerate(cluster_labels):
+        if clust_num not in groups:
+            groups[clust_num] = list()
+        groups[clust_num].append(usr_idx)
+
+    for key in groups.keys():
+        sorted(groups[key])
+
+    return groups
+
+
+def compare_sim(user_similarity_1, user_similarity_2):
+    for i in range(len(user_similarity_1)):
+        for j in range(len(user_similarity_1)):
+            if user_similarity_1[i][j] != 0:
+                if abs(user_similarity_1[i][j] - user_similarity_2[i][j]) > 0.00000001:
+                    print('{}:{} {} vs {}'.format(i, j, user_similarity_1[i][j], user_similarity_2[i][j]))
+
+
 def ex2(plot_charts=True, verbose=True):
     """
     Optimized calc using clusters
@@ -268,20 +368,74 @@ def ex2(plot_charts=True, verbose=True):
     ml100k_filename = 'ml-100k/u.data'
     data = DatasetManager.load_csv(ml100k_filename)
 
-    # pre process
-    user_item = DatasetManager.transform_to_user_item_mat(data, verbose=verbose)
+    # train test split
+    train, test = DatasetManager.train_test_split(data, shuffle=False)
 
-    # users_mean_ratings = np.mean(user_item, axis=1)
-    # items_mean_ratings = np.mean(user_item, axis=0)
-    # user_item_centered = user_item - users_mean_ratings.reshape(-1, 1)
+    # pre process
+    user_item = DatasetManager.transform_to_user_item_mat(train, verbose=verbose)
+    user_item_test = DatasetManager.transform_to_user_item_mat(test, verbose=verbose)
 
     # clusterize users
     k = 3
     cluster_labels, _ = clusterize(user_item, k, plot_charts)
+    cluster_groups = group_users(cluster_labels, sort=True)
+    cluster_data = {
+        'labels': cluster_labels,
+        'groups': cluster_groups
+    }
 
-    # calculate similarities for user and item
+    # calculate similarities using clusters
+    time = LogTime('pairwise_distances_clust')
+    user_similarity_1 = pairwise_distances_clust(user_item, cluster_data, metric=jaccard_sim, sort_optim=True)
+    time.finish()
+
+    time = LogTime('pairwise_distances')
+    user_similarity_2 = pairwise_distances(user_item, metric=jaccard_sim)
+    time.finish()
+
+    compare_sim(user_similarity_1, user_similarity_2)
+
+    # predict using clusters
+    def transform_sparse_sim(sparse_sim):
+        sim = list()
+        for i in range(len(sparse_sim)):
+            sim.append([])
+            for j in range(len(sparse_sim)):
+                if sparse_sim[i][j] != 0:
+                    sim[i].append({
+                        'user_id': j,
+                        'sim_factor': sparse_sim[i][j]
+                    })
+        return sim
+
+    user_similarity_1 = transform_sparse_sim(user_similarity_1)
+    time = LogTime('predict_clust')
+    user_prediction_clus = predict_clust(user_item, user_similarity_1, type='user', k_similar=20)
+    time.finish()
+
+    time = LogTime('predict')
+    user_prediction = predict(user_item, user_similarity_2, type='user', k_similar=20)
+    time.finish()
+
+    # recomm
+    recommendations_usr_clus, watched_movies_usr_clus = get_recommendations(user_item, user_prediction_clus, n=10)
+    recommendations_usr, watched_movies_usr = get_recommendations(user_item, user_prediction, n=10)
+
+    # evaluate
+    evaluator = Evaluator(user_item_test)
+    recomm_usr_mat_clus = transform_recomm(recommendations_usr_clus)
+    recomm_usr_mat = transform_recomm(recommendations_usr)
+
+    eval_user_clus = evaluator.eval(recomm_usr_mat_clus, user_prediction_clus)
+    eval_user = evaluator.eval(recomm_usr_mat, user_prediction)
+
+    print("Eval user-based (with clust)")
+    print(eval_user_clus)
+    print()
+    print("Eval user-based (without clust)")
+    print(eval_user)
 
 
 if __name__ == '__main__':
-    ex1()
-    # ex2()
+    # ex1()
+    ex2(plot_charts=False)

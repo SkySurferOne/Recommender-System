@@ -75,7 +75,6 @@ def predict_ksimilar_items(ratings, ratings_diff, similarity, k=20):
 
 
 def predict(ratings, similarity, type='user', k_similar=None):
-    # TODO add user-item
     pred = None
     if type == 'user':
         mean_user_rating = ratings.mean(axis=1).reshape(-1, 1)
@@ -93,6 +92,19 @@ def predict(ratings, similarity, type='user', k_similar=None):
             pred = mean_item_rating + ratings_diff.dot(similarity) / np.array([np.abs(similarity).sum(axis=1)])
         else:
             pred = mean_item_rating + predict_ksimilar_items(ratings, ratings_diff, similarity, k=k_similar)
+
+    elif type == 'user-item':
+        if k_similar is None:
+            raise Exception('k_similar cannot be Nonen for user-item')
+        mean_user_rating = ratings.mean(axis=1).reshape(-1, 1)
+        ratings_diff = (ratings - mean_user_rating)
+        pred_user = mean_user_rating + predict_ksimilar_user(ratings, ratings_diff, similarity['user'], k=k_similar)
+
+        mean_item_rating = ratings.mean(axis=0).reshape(-1, 1).T
+        ratings_diff = (ratings - mean_item_rating)
+        pred_item = mean_item_rating + predict_ksimilar_items(ratings, ratings_diff, similarity['item'], k=k_similar)
+
+        pred = (pred_user + pred_item) / 2
 
     return pred
 
@@ -137,7 +149,11 @@ def print_user_recommendations(items, recommendations, watched_movies, users_num
 
 
 def pearson(a, b):
-    return pearsonr(a, b)[0]
+    p = pearsonr(a, b)[0]
+    if p == math.nan:
+        p = -1
+
+    return p
 
 
 def jaccard_sim2(a, b):
@@ -187,23 +203,24 @@ def ex1(plot_charts=True, verbose=True):
     user_item_test = DatasetManager.transform_to_user_item_mat(test, verbose=True)
 
     # calculate similarities for user and item
-    # TODO add custom metric
     # metric = pearson
     metric = 'cosine'
     # metric = 'correlation'
     # metric = watched_movies
 
     user_similarity = pairwise_distances(user_item, metric=jaccard_sim)
-    item_similarity = pairwise_distances(user_item.T, metric=jaccard_sim)
+    item_similarity = pairwise_distances(user_item.T, metric=jaccard_sim2)
 
     # predict
     user_prediction = predict(user_item, user_similarity, type='user', k_similar=20)
     item_prediction = predict(user_item, item_similarity, type='item', k_similar=20)
+    user_item_prediction = user_prediction + item_prediction
 
     # get top n recommendations
     topn = 10
     recommendations_usr, watched_movies_usr = get_recommendations(user_item, user_prediction, n=topn)
     recommendations_itm, watched_movies_itm = get_recommendations(user_item, item_prediction, n=topn)
+    recommendations_usr_item, watched_movies_usr_itm = get_recommendations(user_item, user_item_prediction, n=topn)
 
     if verbose:
         users_num = 3
@@ -212,6 +229,9 @@ def ex1(plot_charts=True, verbose=True):
         print()
         print("Items based: ")
         print_user_recommendations(items, recommendations_itm, watched_movies_itm, users_num)
+        print()
+        print("User-item: ")
+        print_user_recommendations(items, recommendations_usr_item, watched_movies_usr_itm, users_num)
 
     # evaluate
     evaluator = Evaluator(user_item_test)
@@ -221,15 +241,20 @@ def ex1(plot_charts=True, verbose=True):
 
     recomm_usr_mat = transform_recomm(recommendations_usr)
     recomm_itm_mat = transform_recomm(recommendations_itm)
+    recomm_usr_itm_mat = transform_recomm(recommendations_usr_item)
 
     eval_user = evaluator.eval(recomm_usr_mat, user_prediction)
     eval_item = evaluator.eval(recomm_itm_mat, item_prediction)
+    eval_user_item = evaluator.eval(recomm_usr_itm_mat, user_item_prediction)
 
     print("Eval user-based")
     print(eval_user)
     print()
     print("Eval item-based")
     print(eval_item)
+    print()
+    print("Eval user-item:")
+    print(eval_user_item)
 
 
 def ex2(plot_charts=True, verbose=True):

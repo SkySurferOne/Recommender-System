@@ -1,4 +1,3 @@
-import copy
 import math
 
 import numpy as np
@@ -7,9 +6,10 @@ from sklearn.cluster import KMeans
 from sklearn.decomposition import PCA
 from sklearn.metrics.pairwise import pairwise_distances
 
-from common.utils.LogTime import LogTime
-from common.utils.plotter import draw_plot_point_label_set2
-from common.utils.utils import merge_labels_2d
+from customized.main.models.UserBasedCF import UserBasedCF
+from customized.main.utils.LogTime import LogTime
+from customized.main.utils.plotter import draw_plot_point_label_set2
+from customized.main.utils.utils import merge_labels_2d
 from customized.main.DatasetManager import DatasetManager
 from customized.main.Evaluator import Evaluator
 
@@ -435,7 +435,24 @@ def ex2(plot_charts=True, verbose=True):
     print("Eval user-based (without clust)")
     print(eval_user)
 
+def test():
+    ml100k_filename = 'ml-100k/u.data'
+
+    dm = DatasetManager()
+    data = dm.load_csv(ml100k_filename)
+    train, test = dm.train_test_split(data, shuffle=False)
+
+    user_item = dm.transform_to_user_item_mat(train, verbose=True)
+    user_item_test = dm.transform_to_user_item_mat(test, verbose=True)
+
+    model = UserBasedCF(verbose=True)
+    model.fit(user_item)
+
+    predicted = model.predict_all()
+    print(predicted)
+
 
 if __name__ == '__main__':
     # ex1()
-    ex2(plot_charts=False)
+    # ex2(plot_charts=False)
+    test()

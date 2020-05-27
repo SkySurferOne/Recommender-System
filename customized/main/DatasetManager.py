@@ -11,13 +11,14 @@ class DatasetManager:
         pass
 
     @classmethod
-    def load_csv(cls, filename, delimeter='\t', encoding='UTF-8'):
+    def load_csv(cls, filename, delimeter='\t', encoding='UTF-8', realative=True):
         """
         :param filename: path inside data folder
         :return:
         """
-        dirname = os.path.dirname(__file__)
-        filename = os.path.join(dirname, '../../data/{}'.format(filename))
+        if realative:
+            dirname = os.path.dirname(__file__)
+            filename = os.path.join(dirname, '../../data/{}'.format(filename))
         data = []
 
         with open(filename, newline='\n', encoding=encoding) as csvfile:

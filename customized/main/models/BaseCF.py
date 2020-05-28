@@ -2,7 +2,7 @@ from sklearn.metrics.pairwise import cosine_distances
 
 from customized.main.Evaluator import Evaluator
 from customized.main.models.Model import Model
-from customized.main.models.Timed import Timed
+from customized.main.utils.Timed import Timed
 from customized.main.similarity import cosine_watched_sim, jaccard_watched_sim
 
 BUILDIN_METRICS = {

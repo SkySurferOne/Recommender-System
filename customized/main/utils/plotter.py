@@ -1,12 +1,11 @@
-import numpy as np
-
 import matplotlib.pyplot as plt
+import numpy as np
 from matplotlib.ticker import MaxNLocator
-import matplotlib.cm as cm
 
 
 def plot_on_one(title, xtitle, ytitle, data, show=True, logscale_axis=0, show_legend=True):
     """
+    Plot multiple plots on one figure
     :param title:
     :param xtitle:
     :param ytitle:
@@ -68,8 +67,8 @@ def plot_silhouette_scores(X, cluster_labels, sample_silhouette_values, silhouet
         if colors is None:
             ccolors = np.array(get_color(i, letters=False)) / 255
         ax.fill_betweenx(np.arange(y_lower, y_upper),
-                          0, ith_cluster_silhouette_values,
-                          facecolor=ccolors, edgecolor=ccolors, alpha=0.7)
+                         0, ith_cluster_silhouette_values,
+                         facecolor=ccolors, edgecolor=ccolors, alpha=0.7)
 
         ax.text(-0.05, y_lower + 0.5 * size_cluster_i, str(i))
 
@@ -85,7 +84,7 @@ def plot_silhouette_scores(X, cluster_labels, sample_silhouette_values, silhouet
     plt.show()
 
 
-def plot_points(title='plot', xtitle='x', ytitle='y', points=[]):
+def plot_points(title='plot', xtitle='x', ytitle='y', points=None):
     """
 
     :param title:
@@ -114,6 +113,7 @@ def plot_points(title='plot', xtitle='x', ytitle='y', points=[]):
 
 def plot_on_one_errorbars(title, xtitle, ytitle, data, only_ints_on_x=False, save_it=False):
     """
+    Plot multiple plots on one figure with error bars
     :param title:
     :param xtitle:
     :param ytitle:
@@ -145,22 +145,24 @@ def plot_on_one_errorbars(title, xtitle, ytitle, data, only_ints_on_x=False, sav
     plt.ylabel(ytitle)
 
     if save_it:
-        plt.savefig(title+'.png')
+        plt.savefig(title + '.png')
     else:
         plt.show()
 
 
-def draw_plot_point_label_set2(title='plot', xtitle='x', ytitle='y', set=[]):
+def draw_plot_point_label_set2(title='plot', xtitle='x', ytitle='y', set=None):
     """
-    Plots sets one one chart.
+    Plots sets on one chart.
     Every label has different style.
     :param title:
     :param xtitle:
     :param ytitle:
     :param set:
-        [[x1, y1, label1], [x2, y2, label1], ..., [x10, y10, label2], ...], // one set
+        [[x1, y1, label1], [x2, y2, label1], ..., [x10, y10, label2], ...]
     :return:
     """
+    if set is None:
+        set = list()
     data = []
     cords = {}
 
@@ -181,6 +183,16 @@ def draw_plot_point_label_set2(title='plot', xtitle='x', ytitle='y', set=[]):
         data.extend([v["x"], v["y"], str(k), v["style"]])
 
     plot_on_one(title, xtitle, ytitle, data, show_legend=False)
+
+
+def merge_labels_2d(X, labels):
+    """
+    Can be used for transforming data for draw_plot_point_label_set2 and draw_plot_point_label_set
+    :param X:
+    :param labels:
+    :return:
+    """
+    return np.c_[X[:, 0], X[:, 1], labels]
 
 
 def draw_plot_point_label_set(title='plot', xtitle='x', ytitle='y', base=None, *sets):
@@ -281,4 +293,73 @@ def plot_gallery(title, images, n_col=3, n_row=2, image_shape=(64, 64)):
         plt.xticks(())
         plt.yticks(())
     plt.subplots_adjust(0.01, 0.05, 0.99, 0.93, 0.04, 0.)
+    plt.show()
+
+
+def histogram_bars(data_sequence, labels, ylabel='y', xlabel='x', title='histogram'):
+    x = np.arange(len(data_sequence))
+    plt.bar(x, height=data_sequence)
+    plt.xticks(x, labels)
+    plt.ylabel(ylabel)
+    plt.xlabel(xlabel)
+    plt.title(title)
+    plt.show()
+
+
+def histogram_bars_grouped(seqences, xlabels, bar_labels, ylabel='y', xlabel='x', title='histogram',
+                           bar_width=0.2, show_bar_values=True, figsize=None):
+    """
+
+    :param seqences: sequences of data - they will be grouped by column
+    [
+        [1, 2, 3, 4],
+        [2, 3, 4, 5]
+    ]
+    :param xlabels: labels on x axis
+    :param bar_labels: labels for bars
+    :param ylabel:
+    :param xlabel: can be None
+    :param title:
+    :param bar_width:
+    :param tight_layout:
+    :return:
+    """
+    x = np.arange(len(xlabels))
+
+    fig, ax = plt.subplots()
+    rects = []
+
+    seq_len = len(seqences)
+    for i in range(seq_len):
+        pos = i * bar_width + bar_width * (1 - seq_len) / 2
+        rect = ax.bar(x + pos, seqences[i], bar_width, label=bar_labels[i])
+        rects.append(rect)
+
+    ax.set_ylabel(ylabel)
+    if xlabel is not None:
+        ax.set_xlabel(xlabel)
+    ax.set_title(title)
+    ax.set_xticks(x)
+    ax.set_xticklabels(xlabels)
+    ax.legend()
+
+
+    fig.tight_layout()
+    if figsize is not None:
+        fig.set_size_inches(figsize)
+
+    def autolabel(rects):
+        """Attach a text label above each bar in *rects*, displaying its height."""
+        for rect in rects:
+            height = rect.get_height()
+            ax.annotate('{}'.format(height),
+                        xy=(rect.get_x() + rect.get_width() / 2, height),
+                        xytext=(0, 3),  # 3 points vertical offset
+                        textcoords="offset points",
+                        ha='center', va='bottom')
+
+    if show_bar_values:
+        for rect in rects:
+            autolabel(rect)
+
     plt.show()

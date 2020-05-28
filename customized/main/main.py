@@ -8,8 +8,7 @@ from sklearn.metrics.pairwise import pairwise_distances
 
 from customized.main.models.UserBasedCF import UserBasedCF
 from customized.main.utils.LogTime import LogTime
-from customized.main.utils.plotter import draw_plot_point_label_set2
-from customized.main.utils.utils import merge_labels_2d
+from customized.main.utils.plotter import draw_plot_point_label_set2, merge_labels_2d
 from customized.main.DatasetManager import DatasetManager
 from customized.main.Evaluator import Evaluator
 

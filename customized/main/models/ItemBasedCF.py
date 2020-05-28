@@ -2,7 +2,7 @@ import numpy as np
 from sklearn.metrics.pairwise import pairwise_distances
 
 from customized.main.models.BaseCF import BaseCF
-from customized.main.models.Timed import Timed
+from customized.main.utils.Timed import Timed
 
 
 class ItemBasedCF(BaseCF):

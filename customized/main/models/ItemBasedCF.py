@@ -7,7 +7,7 @@ from customized.main.utils.Timed import Timed
 
 class ItemBasedCF(BaseCF):
 
-    def __init__(self, similarity_metric='cosine_watched', k_similar=20, top_n=10, verbose=False):
+    def __init__(self, similarity_metric='cosine_watched', k_similar=9, top_n=10, verbose=False):
         """
 
         :param similarity_metric:

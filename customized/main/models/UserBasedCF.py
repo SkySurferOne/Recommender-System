@@ -62,4 +62,8 @@ class UserBasedCF(BaseCF):
                     if self.train_set[similar_user][i] > 0:
                         pred[user][i] += sim_factor * ratings_diff[similar_user][i]
 
+        for i in range(len(k_mat_1d)):
+            if k_mat_1d[i] == 0:
+                k_mat_1d[i] = 1
+
         return pred / np.array([k_mat_1d]).T

@@ -307,7 +307,8 @@ def histogram_bars(data_sequence, labels, ylabel='y', xlabel='x', title='histogr
 
 
 def histogram_bars_grouped(seqences, xlabels, bar_labels, ylabel='y', xlabel='x', title='histogram',
-                           bar_width=0.2, show_bar_values=True, figsize=None):
+                           bar_width=0.2, show_bar_values=True, figsize=None, save_fig=False,
+                           legend_loc=0, show_legend=True):
     """
 
     :param seqences: sequences of data - they will be grouped by column
@@ -341,8 +342,8 @@ def histogram_bars_grouped(seqences, xlabels, bar_labels, ylabel='y', xlabel='x'
     ax.set_title(title)
     ax.set_xticks(x)
     ax.set_xticklabels(xlabels)
-    ax.legend()
-
+    if show_legend:
+        ax.legend(loc=legend_loc)
 
     fig.tight_layout()
     if figsize is not None:
@@ -362,4 +363,7 @@ def histogram_bars_grouped(seqences, xlabels, bar_labels, ylabel='y', xlabel='x'
         for rect in rects:
             autolabel(rect)
 
-    plt.show()
+    if save_fig:
+        plt.savefig(title + '.png')
+    else:
+        plt.show()

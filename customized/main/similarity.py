@@ -1,5 +1,8 @@
 import math
 
+import numpy as np
+from sklearn.metrics.pairwise import cosine_similarity
+
 
 def cosine_watched_sim(a, b):
     p = b[a > 1]
@@ -18,3 +21,7 @@ def jaccard_watched_sim(a, b):
     if denominator == 0:
         return -1
     return common / denominator
+
+
+def cosine_classic_sim(a, b):
+    return cosine_similarity(np.array([a]), np.array([b]))[0]

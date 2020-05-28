@@ -3,12 +3,12 @@ from sklearn.metrics.pairwise import cosine_distances
 from customized.main.Evaluator import Evaluator
 from customized.main.models.Model import Model
 from customized.main.utils.Timed import Timed
-from customized.main.similarity import cosine_watched_sim, jaccard_watched_sim
+from customized.main.similarity import cosine_watched_sim, jaccard_watched_sim, cosine_classic_sim
 
 BUILDIN_METRICS = {
     'jaccard_watched': jaccard_watched_sim,
     'cosine_watched': cosine_watched_sim,
-    'cosine_ratings': cosine_distances
+    'cosine_ratings': cosine_classic_sim
 }
 
 

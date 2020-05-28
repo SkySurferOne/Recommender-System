@@ -2,7 +2,7 @@ import time
 
 import numpy as np
 
-from customized.main.utils.plotter import plot_on_one_errorbars, get_color
+from customized.main.utils.plotter import plot_on_one_errorbars, get_color, histogram_bars_grouped
 
 
 def gen_plots_with_errbars(plots_desc, compared, range_val, func, repeat=3, save_figs=False, verbose=False):
@@ -82,8 +82,8 @@ def gen_plots_with_errbars(plots_desc, compared, range_val, func, repeat=3, save
             print('  >>> {} - y: {}, err: {}'.format(key, y_avg[key]['y'][-1], y_avg[key]['err'][-1]))
 
     data_lists = _init_list()
-    for i, compared in enumerate(compared):
-        case_name = compared['name']
+    for i, compared_obj in enumerate(compared):
+        case_name = compared_obj['name']
         y_avg = _init_y_avg()
         if verbose:
             print('({}) started calculation for {} case'.format(i, case_name))
@@ -91,12 +91,71 @@ def gen_plots_with_errbars(plots_desc, compared, range_val, func, repeat=3, save
             y_val = _init_list()
 
             for _ in range(repeat):
-                func(y_val, compared, j)
+                func(y_val, compared_obj, j)
             _calc_avg(y_val, y_avg)
 
             if verbose:
                 _print_after_process(j, y_avg)
         _add_avg_to_data(i, data_lists, y_avg, case_name)
+
+    _plot_data_lists(data_lists)
+
+
+def gen_grouped_histogram_bars(plots_desc, compared, range_val, func, repeat=3, save_figs=False, verbose=False,
+                               bar_width=0.2, show_bar_values=True, figsize=None, legend_loc=0, show_legend=True):
+    def _init_data():
+        d = dict()
+        for desc in plots_desc:
+            d[desc['key']] = list()
+            for i in range(len(range_val)):
+                d[desc['key']].append([])
+
+        return d
+
+    def _init_list():
+        y_val = dict()
+        for desc in plots_desc:
+            y_val[desc['key']] = list()
+
+        return y_val
+
+    def _calc_avg(y_val, data_lists, val_ind):
+        for desc in plots_desc:
+            key = desc['key']
+            data_lists[key][val_ind].append(np.mean(y_val[key]))
+
+    def _plot_data_lists(data_lists):
+        xlabels = []
+        for c in compared:
+            xlabels.append(c['name'])
+        for desc in plots_desc:
+            key = desc['key']
+            histogram_bars_grouped(data_lists[key], xlabels, bar_labels=range_val,
+                                   ylabel=desc['ylabel'], xlabel=desc['xlabel'], title=desc['name'],
+                                   bar_width=bar_width, show_bar_values=show_bar_values, figsize=figsize,
+                                   save_fig=save_figs, legend_loc=legend_loc, show_legend=show_legend)
+
+    def _print_after_process(j_value, j_idx, data_lists):
+        print('>>> results for value {}: '.format(j_value))
+        for desc in plots_desc:
+            key = desc['key']
+            print('  >>> {} - y: {}'.format(key, data_lists[key][j_idx][-1]))
+
+    data_lists = _init_data()
+    for i, compared_obj in enumerate(compared):
+        case_name = compared_obj['name']
+        if verbose:
+            print('({}) started calculation for {} case'.format(i, case_name))
+
+        for j, val in enumerate(range_val):
+
+            y_val = _init_list()
+            for _ in range(repeat):
+                func(y_val, compared_obj, val)
+            _calc_avg(y_val, data_lists, j)
+
+            if verbose:
+                _print_after_process(val, j, data_lists)
 
     _plot_data_lists(data_lists)
 

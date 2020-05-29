@@ -1,6 +1,6 @@
 import inspect
 
-from customized.main.utils.LogTime import LogTime
+from src.main.utils.LogTime import LogTime
 
 
 class Timed:

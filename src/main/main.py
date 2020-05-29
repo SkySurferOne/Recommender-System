@@ -6,11 +6,11 @@ from sklearn.cluster import KMeans
 from sklearn.decomposition import PCA
 from sklearn.metrics.pairwise import pairwise_distances
 
-from customized.main.models.UserBasedCF import UserBasedCF
-from customized.main.utils.LogTime import LogTime
-from customized.main.utils.plotter import draw_plot_point_label_set2, merge_labels_2d
-from customized.main.DatasetManager import DatasetManager
-from customized.main.Evaluator import Evaluator
+from src.main.models.UserBasedCF import UserBasedCF
+from src.main.utils.LogTime import LogTime
+from src.main.utils.plotter import draw_plot_point_label_set2, merge_labels_2d
+from src.main.DatasetManager import DatasetManager
+from src.main.Evaluator import Evaluator
 
 
 def pca_dim_reduction(X, n_out=2):
@@ -433,6 +433,7 @@ def ex2(plot_charts=True, verbose=True):
     print()
     print("Eval user-based (without clust)")
     print(eval_user)
+
 
 def test():
     ml100k_filename = 'ml-100k/u.data'

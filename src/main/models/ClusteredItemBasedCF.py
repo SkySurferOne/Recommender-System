@@ -1,8 +1,9 @@
 import numpy as np
 from sklearn.cluster import KMeans
 
-from customized.main.models.BaseCF import BaseCF
-from customized.main.utils.Timed import Timed
+from src.main.models.BaseCF import BaseCF
+from src.main.utils.Timed import Timed
+
 
 # TODO create common class
 class ClusteredItemBasedCF(BaseCF):

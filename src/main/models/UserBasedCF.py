@@ -1,8 +1,8 @@
 import numpy as np
 from sklearn.metrics.pairwise import pairwise_distances
 
-from customized.main.models.BaseCF import BaseCF
-from customized.main.utils.Timed import Timed
+from src.main.models.BaseCF import BaseCF
+from src.main.utils.Timed import Timed
 
 
 class UserBasedCF(BaseCF):

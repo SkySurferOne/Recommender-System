@@ -2,7 +2,7 @@ import time
 
 import numpy as np
 
-from customized.main.utils.plotter import plot_on_one_errorbars, get_color, histogram_bars_grouped
+from src.main.utils.plotter import plot_on_one_errorbars, get_color, histogram_bars_grouped
 
 
 def gen_plots_with_errbars(plots_desc, compared, range_val, func, repeat=3, save_figs=False, verbose=False):
